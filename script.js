@@ -80,9 +80,18 @@ function setupEventListeners() {
     ['pasillosInput', 'estantesInput', 'casillasInput'].forEach(id => {
         document.getElementById(id).addEventListener('change', saveWarehouseConfig);
     });
+
+    // Cerrar sugerencias al hacer clic fuera
+    document.addEventListener('click', function(event) {
+        const searchContainer = document.querySelector('.search-container');
+        const suggestions = document.getElementById('searchSuggestions');
+        if (searchContainer && suggestions && !searchContainer.contains(event.target)) {
+            suggestions.classList.add('hidden');
+        }
+    });
 }
 
-// Gestión de vistas
+//Gestión de vistas
 function switchView(e) {
     const view = e.target.dataset.view;
     currentView = view;
@@ -458,6 +467,19 @@ async function removeItemFromModal() {
     }
 }
 
+// Nuevo modal para información del item
+function openItemModal(item) {
+    document.getElementById('itemCodeView').textContent = item.code;
+    document.getElementById('itemDescriptionView').textContent = item.description;
+    const [pasillo, estante, casilla] = item.location.split('-');
+    document.getElementById('itemLocationView').textContent = `Pasillo ${pasillo}, Estante ${estante}, Casilla ${casilla.replace('C', '')}`;
+    document.getElementById('itemModal').style.display = 'block';
+}
+
+function closeItemModal() {
+    document.getElementById('itemModal').style.display = 'none';
+}
+
 // Gestión de items
 async function loadItems() {
     try {
@@ -640,6 +662,8 @@ function editItemInline(location) {
 // Búsqueda
 function handleSearch() {
     const query = document.getElementById('searchInput').value.toLowerCase();
+    const originalQuery = document.getElementById('searchInput').value; // Para mostrar en sugerencias sin lower
+    showSuggestions(originalQuery);
     handleSearchLogic(query);
 }
 
@@ -682,6 +706,37 @@ function highlightSearchResults(query) {
             casilla.style.borderColor = '';
         }
     });
+}
+
+// Nueva función para mostrar sugerencias
+function showSuggestions(query) {
+    const suggestionsDiv = document.getElementById('searchSuggestions');
+    suggestionsDiv.innerHTML = '';
+    suggestionsDiv.classList.add('hidden');
+
+    if (!query.trim()) return;
+
+    const filtered = allItems.filter(item => 
+        item.code.toLowerCase().includes(query.toLowerCase()) ||
+        (item.description && item.description.toLowerCase().includes(query.toLowerCase()))
+    );
+
+    if (filtered.length === 0) return;
+
+    const ul = document.createElement('ul');
+
+    filtered.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = `${item.code} - ${item.description}`;
+        li.addEventListener('click', () => {
+            openItemModal(item);
+            suggestionsDiv.classList.add('hidden');
+        });
+        ul.appendChild(li);
+    });
+
+    suggestionsDiv.appendChild(ul);
+    suggestionsDiv.classList.remove('hidden');
 }
 
 // Paginación
@@ -1140,11 +1195,15 @@ function showNotification(message) {
     }, 3000);
 }
 
-// Cerrar modal al hacer clic fuera
+// Cerrar modales al hacer clic fuera
 window.addEventListener('click', function(event) {
-    const modal = document.getElementById('casillModal');
-    if (event.target === modal) {
+    const casillModal = document.getElementById('casillModal');
+    if (event.target === casillModal) {
         closeCasillModal();
+    }
+    const itemModal = document.getElementById('itemModal');
+    if (event.target === itemModal) {
+        closeItemModal();
     }
 });
 
@@ -1152,6 +1211,7 @@ window.addEventListener('click', function(event) {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeCasillModal();
+        closeItemModal();
     }
     
     if (e.ctrlKey && e.key === 'f') {
@@ -1201,3 +1261,4 @@ window.importCatalogCSV = importCatalogCSV;
 window.sortCatalog = sortCatalog;
 window.previousCatalogPage = previousCatalogPage;
 window.nextCatalogPage = nextCatalogPage;
+window.closeItemModal = closeItemModal;
