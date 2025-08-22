@@ -1,25 +1,4 @@
-// Tabla de items
-        function updateItemsTable() {
-            const tbody = document.getElementById('itemsTableBody');
-            tbody.innerHTML = '';
-
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const pageItems = filteredItems.slice(startIndex, endIndex);
-
-            pageItems.forEach(item => {
-                const row = document.createElement('tr');
-                const isSelected = selectedItems.has(item.location);
-                
-                // Formatear fecha
-                const date = new Date(item.timestamp || Date.now());
-                const formattedDate = date.toLocaleDateString('es-ES');
-                
-                // Color de fondo para categorías
-                const categoryColors = {
-                    'electronica': '#e3f2fd',
-                    'herramientas': '#fff3e0',
-                    'oficina': '#f3e5f<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
