@@ -50,13 +50,13 @@ let catalogSortField = 'code';
 let catalogSortDirection = 'asc';
 let warehouseConfig = {
     pasillos: 4,
-    estantes: 4,
-    casillas: 6
+    aisleConfigs: Array(4).fill({estantes: 4, casillas: 6})
 };
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', async function() {
     await loadWarehouseConfig();
+    updateAisleConfigs();
     await loadItems();
     await loadCatalog();
     generateWarehouse();
@@ -77,10 +77,6 @@ function setupEventListeners() {
     document.getElementById('itemsSearchInput').addEventListener('input', handleItemsSearch);
     document.getElementById('catalogSearchInput').addEventListener('input', handleCatalogSearch);
     
-    ['pasillosInput', 'estantesInput', 'casillasInput'].forEach(id => {
-        document.getElementById(id).addEventListener('change', saveWarehouseConfig);
-    });
-
     // Cerrar sugerencias al hacer clic fuera
     document.addEventListener('click', function(event) {
         const searchContainer = document.querySelector('.search-container');
@@ -91,7 +87,7 @@ function setupEventListeners() {
     });
 }
 
-//Gestión de vistas
+// Gestión de vistas
 function switchView(e) {
     const view = e.target.dataset.view;
     currentView = view;
@@ -118,6 +114,7 @@ function generateWarehouse() {
     grid.innerHTML = '';
 
     for (let p = 1; p <= warehouseConfig.pasillos; p++) {
+        const config = warehouseConfig.aisleConfigs[p-1];
         const pasilloDiv = document.createElement('div');
         pasilloDiv.className = 'pasillo';
         
@@ -131,7 +128,7 @@ function generateWarehouse() {
 
         const estanteLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
         
-        for (let e = 0; e < warehouseConfig.estantes; e++) {
+        for (let e = 0; e < config.estantes; e++) {
             const estanteDiv = document.createElement('div');
             estanteDiv.className = 'estante';
             
@@ -142,8 +139,9 @@ function generateWarehouse() {
 
             const casillasGrid = document.createElement('div');
             casillasGrid.className = 'casillas-grid';
+            casillasGrid.style.gridTemplateColumns = `repeat(${config.casillas}, 1fr)`;
 
-            for (let c = 1; c <= warehouseConfig.casillas; c++) {
+            for (let c = 1; c <= config.casillas; c++) {
                 const casilla = document.createElement('div');
                 casilla.className = 'casilla';
                 casilla.textContent = `C${c}`;
@@ -169,7 +167,7 @@ function generateWarehouse() {
     }
 }
 
-// Nuevas funciones para selectores de ubicación
+// Funciones para selectores de ubicación
 function updateLocationSelectors() {
     const pasilloSelect = document.getElementById('pasilloSelect');
     pasilloSelect.innerHTML = '<option value="">Seleccionar pasillo</option>';
@@ -191,11 +189,13 @@ function updateEstanteSelect() {
     casillaSelect.innerHTML = '<option value="">Seleccionar casilla</option>';
     casillaSelect.disabled = true;
     
-    if (pasilloSelect.value) {
+    const pasillo = pasilloSelect.value;
+    if (pasillo) {
         estanteSelect.disabled = false;
+        const config = warehouseConfig.aisleConfigs[pasillo - 1];
         const estanteLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
         
-        for (let e = 0; e < warehouseConfig.estantes; e++) {
+        for (let e = 0; e < config.estantes; e++) {
             const option = document.createElement('option');
             option.value = estanteLabels[e];
             option.textContent = `Estante ${estanteLabels[e]}`;
@@ -213,11 +213,14 @@ function updateCasillaSelect() {
     
     casillaSelect.innerHTML = '<option value="">Seleccionar casilla</option>';
     
-    if (pasilloSelect.value && estanteSelect.value) {
+    const pasillo = pasilloSelect.value;
+    const estante = estanteSelect.value;
+    if (pasillo && estante) {
         casillaSelect.disabled = false;
+        const config = warehouseConfig.aisleConfigs[pasillo - 1];
         
-        for (let c = 1; c <= warehouseConfig.casillas; c++) {
-            const location = `${pasilloSelect.value}-${estanteSelect.value}-C${c}`;
+        for (let c = 1; c <= config.casillas; c++) {
+            const location = `${pasillo}-${estante}-C${c}`;
             if (!allItems.find(item => item.location === location)) {
                 const option = document.createElement('option');
                 option.value = `C${c}`;
@@ -777,8 +780,12 @@ async function loadWarehouseConfig() {
         if (configDoc.exists()) {
             warehouseConfig = configDoc.data();
             document.getElementById('pasillosInput').value = warehouseConfig.pasillos;
-            document.getElementById('estantesInput').value = warehouseConfig.estantes;
-            document.getElementById('casillasInput').value = warehouseConfig.casillas;
+        } else {
+            // Configuración por defecto si no existe
+            warehouseConfig = {
+                pasillos: 4,
+                aisleConfigs: Array(4).fill({estantes: 4, casillas: 6})
+            };
         }
     } catch (error) {
         console.error('Error al cargar configuración:', error);
@@ -793,22 +800,71 @@ async function saveWarehouseConfig() {
     }
 }
 
-async function applyChanges() {
-    const newConfig = {
-        pasillos: parseInt(document.getElementById('pasillosInput').value),
-        estantes: parseInt(document.getElementById('estantesInput').value),
-        casillas: parseInt(document.getElementById('casillasInput').value)
-    };
+function updateAisleConfigs() {
+    const pasillos = parseInt(document.getElementById('pasillosInput').value) || 4;
+    const configsDiv = document.getElementById('aisleConfigs');
+    configsDiv.innerHTML = '';
 
-    if (newConfig.pasillos < 1 || newConfig.pasillos > 10 ||
-        newConfig.estantes < 1 || newConfig.estantes > 8 ||
-        newConfig.casillas < 1 || newConfig.casillas > 10) {
-        alert('Los valores deben estar dentro de los rangos permitidos');
-        return;
+    warehouseConfig.pasillos = pasillos;
+    if (warehouseConfig.aisleConfigs.length > pasillos) {
+        warehouseConfig.aisleConfigs = warehouseConfig.aisleConfigs.slice(0, pasillos);
+    } else {
+        while (warehouseConfig.aisleConfigs.length < pasillos) {
+            warehouseConfig.aisleConfigs.push({estantes: 4, casillas: 6});
+        }
     }
 
-    warehouseConfig = newConfig;
-    
+    for (let p = 1; p <= pasillos; p++) {
+        const configDiv = document.createElement('div');
+        configDiv.className = 'aisle-config';
+        
+        const header = document.createElement('h3');
+        header.textContent = `Pasillo ${p}`;
+        configDiv.appendChild(header);
+
+        const estantesGroup = document.createElement('div');
+        estantesGroup.className = 'config-group';
+        const estantesLabel = document.createElement('label');
+        estantesLabel.className = 'config-label';
+        estantesLabel.textContent = 'Estantes';
+        const estantesInput = document.createElement('input');
+        estantesInput.type = 'number';
+        estantesInput.className = 'config-input';
+        estantesInput.value = warehouseConfig.aisleConfigs[p-1].estantes;
+        estantesInput.min = 1;
+        estantesInput.max = 8;
+        estantesInput.onchange = () => {
+            warehouseConfig.aisleConfigs[p-1].estantes = parseInt(estantesInput.value);
+            saveWarehouseConfig();
+        };
+        estantesGroup.appendChild(estantesLabel);
+        estantesGroup.appendChild(estantesInput);
+        configDiv.appendChild(estantesGroup);
+
+        const casillasGroup = document.createElement('div');
+        casillasGroup.className = 'config-group';
+        const casillasLabel = document.createElement('label');
+        casillasLabel.className = 'config-label';
+        casillasLabel.textContent = 'Casillas por estante';
+        const casillasInput = document.createElement('input');
+        casillasInput.type = 'number';
+        casillasInput.className = 'config-input';
+        casillasInput.value = warehouseConfig.aisleConfigs[p-1].casillas;
+        casillasInput.min = 1;
+        casillasInput.max = 10;
+        casillasInput.onchange = () => {
+            warehouseConfig.aisleConfigs[p-1].casillas = parseInt(casillasInput.value);
+            saveWarehouseConfig();
+        };
+        casillasGroup.appendChild(casillasLabel);
+        casillasGroup.appendChild(casillasInput);
+        configDiv.appendChild(casillasGroup);
+
+        configsDiv.appendChild(configDiv);
+    }
+}
+
+async function applyChanges() {
     try {
         await saveWarehouseConfig();
         await loadItems();
@@ -822,10 +878,10 @@ async function applyChanges() {
 }
 
 function revertChanges() {
-    document.getElementById('pasillosInput').value = warehouseConfig.pasillos;
-    document.getElementById('estantesInput').value = warehouseConfig.estantes;
-    document.getElementById('casillasInput').value = warehouseConfig.casillas;
-    showNotification('Cambios revertidos');
+    loadWarehouseConfig().then(() => {
+        updateAisleConfigs();
+        showNotification('Cambios revertidos');
+    });
 }
 
 // Importar/Exportar datos
@@ -881,8 +937,7 @@ async function importFromJSON(data) {
         warehouseConfig = data.config;
         await saveWarehouseConfig();
         document.getElementById('pasillosInput').value = warehouseConfig.pasillos;
-        document.getElementById('estantesInput').value = warehouseConfig.estantes;
-        document.getElementById('casillasInput').value = warehouseConfig.casillas;
+        updateAisleConfigs();
     }
 
     if (data.items && Array.isArray(data.items)) {
@@ -1262,3 +1317,4 @@ window.sortCatalog = sortCatalog;
 window.previousCatalogPage = previousCatalogPage;
 window.nextCatalogPage = nextCatalogPage;
 window.closeItemModal = closeItemModal;
+window.updateAisleConfigs = updateAisleConfigs;
