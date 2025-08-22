@@ -16,6 +16,7 @@
             <div class="search-container">
                 <span class="search-icon">🔍</span>
                 <input type="text" class="search-input" placeholder="Buscar por nombre, etiqueta o ubicación..." id="searchInput">
+                <div id="searchSuggestions" class="suggestions hidden"></div>
             </div>
             <button class="nav-btn active" data-view="mapa">Mapa</button>
             <button class="nav-btn" data-view="items">Items</button>
@@ -227,6 +228,29 @@
                 <button class="btn btn-primary" onclick="saveItemToModal()">Guardar</button>
                 <button class="btn btn-secondary" onclick="removeItemFromModal()">Quitar</button>
                 <button class="btn btn-secondary" onclick="closeCasillModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nuevo modal para ver información del item -->
+    <div id="itemModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeItemModal()">&times;</span>
+            <h3>Información del Item</h3>
+            <div class="item-info">
+                <label class="config-label">Código:</label>
+                <span id="itemCodeView"></span>
+            </div>
+            <div class="item-info">
+                <label class="config-label">Descripción:</label>
+                <span id="itemDescriptionView"></span>
+            </div>
+            <div class="item-info">
+                <label class="config-label">Ubicación:</label>
+                <span id="itemLocationView"></span>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 2rem;">
+                <button class="btn btn-secondary" onclick="closeItemModal()">Cerrar</button>
             </div>
         </div>
     </div>
