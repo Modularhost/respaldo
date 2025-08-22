@@ -373,6 +373,7 @@
             </div>
             <button class="nav-btn active" data-view="mapa">Mapa</button>
             <button class="nav-btn" data-view="items">Items</button>
+            <button class="nav-btn" data-view="catalogo">Catálogo</button>
             <button class="nav-btn" data-view="ajustes">Ajustes</button>
             <button class="nav-btn" onclick="exportData()">Exportar</button>
             <button class="nav-btn" onclick="document.getElementById('importFile').click()">Importar</button>
@@ -400,27 +401,10 @@
                 
                 <div class="add-item-form">
                     <div class="config-group">
-                        <input type="text" id="itemName" placeholder="Nombre del item" class="config-input">
+                        <input type="text" id="itemCode" placeholder="Código del item" class="config-input" oninput="autoFillDescription()">
                     </div>
                     <div class="config-group">
-                        <input type="text" id="itemDescription" placeholder="Descripción" class="config-input">
-                    </div>
-                    <div class="config-group">
-                        <input type="text" id="itemTags" placeholder="Etiquetas (separadas por coma)" class="config-input">
-                    </div>
-                    <div class="config-group">
-                        <input type="number" id="itemQuantity" placeholder="Cantidad" class="config-input" min="1" value="1">
-                    </div>
-                    <div class="config-group">
-                        <select id="itemCategory" class="config-input">
-                            <option value="">Seleccionar categoría</option>
-                            <option value="electronica">Electrónica</option>
-                            <option value="herramientas">Herramientas</option>
-                            <option value="oficina">Oficina</option>
-                            <option value="limpieza">Limpieza</option>
-                            <option value="repuestos">Repuestos</option>
-                            <option value="otros">Otros</option>
-                        </select>
+                        <input type="text" id="itemDescription" placeholder="Descripción (se llena automáticamente)" class="config-input" readonly>
                     </div>
                 </div>
                 
@@ -446,7 +430,7 @@
                             </select>
                         </div>
                         <div class="config-group" style="display: flex; align-items: end;">
-                            <button class="btn btn-primary" onclick="addItem()">Agregar Item</button>
+                            <button class="btn btn-primary" onclick="addItem()">Ubicar Item</button>
                         </div>
                     </div>
                 </div>
@@ -462,13 +446,10 @@
                             <th>
                                 <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
                             </th>
-                            <th style="cursor: pointer;" onclick="sortItems('name')">
-                                Nombre <span id="sort-name">↕️</span>
+                            <th style="cursor: pointer;" onclick="sortItems('code')">
+                                Código <span id="sort-code">↕️</span>
                             </th>
                             <th>Descripción</th>
-                            <th>Categoría</th>
-                            <th>Cantidad</th>
-                            <th>Etiquetas</th>
                             <th style="cursor: pointer;" onclick="sortItems('location')">
                                 Ubicación <span id="sort-location">↕️</span>
                             </th>
@@ -486,16 +467,6 @@
                 <div class="bulk-actions" style="margin: 1rem 0; display: none;" id="bulkActions">
                     <button class="btn btn-secondary" onclick="bulkDelete()">Eliminar Seleccionados</button>
                     <button class="btn btn-secondary" onclick="bulkExport()">Exportar Seleccionados</button>
-                    <select id="bulkCategoryChange" class="config-input" style="width: auto; margin-left: 1rem;">
-                        <option value="">Cambiar categoría...</option>
-                        <option value="electronica">Electrónica</option>
-                        <option value="herramientas">Herramientas</option>
-                        <option value="oficina">Oficina</option>
-                        <option value="limpieza">Limpieza</option>
-                        <option value="repuestos">Repuestos</option>
-                        <option value="otros">Otros</option>
-                    </select>
-                    <button class="btn btn-secondary" onclick="bulkCategoryUpdate()">Aplicar</button>
                 </div>
 
                 <div class="pagination">
@@ -508,7 +479,60 @@
             </div>
         </div>
 
-        <!-- Vista Ajustes -->
+        <!-- Vista Catálogo -->
+        <div id="catalogo-view" class="hidden">
+            <div class="section">
+                <h2>Catálogo de Productos (<span id="catalogoCount">0</span>)</h2>
+                
+                <div class="add-item-form">
+                    <div class="config-group">
+                        <input type="text" id="catalogCode" placeholder="Código del producto" class="config-input">
+                    </div>
+                    <div class="config-group">
+                        <input type="text" id="catalogDescription" placeholder="Descripción del producto" class="config-input">
+                    </div>
+                    <div class="config-group" style="display: flex; align-items: end;">
+                        <button class="btn btn-primary" onclick="addToCatalog()">Agregar al Catálogo</button>
+                    </div>
+                </div>
+
+                <div class="search-container" style="margin-bottom: 1rem;">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" placeholder="Buscar en catálogo..." id="catalogSearchInput">
+                </div>
+
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th style="cursor: pointer;" onclick="sortCatalog('code')">
+                                Código <span id="sort-catalog-code">↕️</span>
+                            </th>
+                            <th style="cursor: pointer;" onclick="sortCatalog('description')">
+                                Descripción <span id="sort-catalog-description">↕️</span>
+                            </th>
+                            <th>En Bodega</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="catalogTableBody">
+                        <!-- Productos se cargan dinámicamente -->
+                    </tbody>
+                </table>
+
+                <div class="pagination">
+                    <button class="btn btn-secondary" id="prevCatalogBtn" onclick="previousCatalogPage()">Anterior</button>
+                    <span>Página <span id="currentCatalogPage">1</span> de <span id="totalCatalogPages">1</span></span>
+                    <button class="btn btn-secondary" id="nextCatalogBtn" onclick="nextCatalogPage()">Siguiente</button>
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <button class="btn btn-secondary" onclick="exportCatalog()">Exportar Catálogo</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('importCatalogFile').click()">Importar Catálogo CSV</button>
+                    <input type="file" id="importCatalogFile" accept=".csv" style="display: none;" onchange="importCatalogCSV(event)">
+                    <button class="btn btn-secondary" onclick="clearCatalog()" style="margin-left: 1rem; background: #dc3545; color: white;">Limpiar Catálogo</button>
+                </div>
+            </div>
+        </div>
         <div id="ajustes-view" class="hidden">
             <div class="section">
                 <h2>Ajustar estructura de la bodega</h2>
@@ -544,32 +568,12 @@
             <span class="close" onclick="closeCasillModal()">&times;</span>
             <h3 id="modalTitle">Gestionar Casilla</h3>
             <div style="margin: 1rem 0;">
-                <label class="config-label">Nombre del item:</label>
-                <input type="text" id="modalItemName" class="config-input">
+                <label class="config-label">Código del item:</label>
+                <input type="text" id="modalItemCode" class="config-input" oninput="autoFillModalDescription()">
             </div>
             <div style="margin: 1rem 0;">
                 <label class="config-label">Descripción:</label>
-                <input type="text" id="modalItemDescription" class="config-input">
-            </div>
-            <div style="margin: 1rem 0;">
-                <label class="config-label">Categoría:</label>
-                <select id="modalItemCategory" class="config-input">
-                    <option value="">Seleccionar categoría</option>
-                    <option value="electronica">Electrónica</option>
-                    <option value="herramientas">Herramientas</option>
-                    <option value="oficina">Oficina</option>
-                    <option value="limpieza">Limpieza</option>
-                    <option value="repuestos">Repuestos</option>
-                    <option value="otros">Otros</option>
-                </select>
-            </div>
-            <div style="margin: 1rem 0;">
-                <label class="config-label">Cantidad:</label>
-                <input type="number" id="modalItemQuantity" class="config-input" min="1" value="1">
-            </div>
-            <div style="margin: 1rem 0;">
-                <label class="config-label">Etiquetas (separadas por coma):</label>
-                <input type="text" id="modalItemTags" class="config-input">
+                <input type="text" id="modalItemDescription" class="config-input" readonly>
             </div>
             <div style="display: flex; gap: 1rem; margin-top: 2rem;">
                 <button class="btn btn-primary" onclick="saveItemToModal()">Guardar</button>
@@ -623,13 +627,18 @@
         // Variables globales
         let currentView = 'mapa';
         let currentPage = 1;
+        let currentCatalogPage = 1;
         const itemsPerPage = 10;
         let allItems = [];
         let filteredItems = [];
+        let allCatalog = [];
+        let filteredCatalog = [];
         let currentModal = null;
         let selectedItems = new Set();
-        let sortField = 'name';
+        let sortField = 'code';
         let sortDirection = 'asc';
+        let catalogSortField = 'code';
+        let catalogSortDirection = 'asc';
         let warehouseConfig = {
             pasillos: 4,
             estantes: 4,
@@ -640,8 +649,10 @@
         document.addEventListener('DOMContentLoaded', async function() {
             await loadWarehouseConfig();
             await loadItems();
+            await loadCatalog();
             generateWarehouse();
             updateItemsTable();
+            updateCatalogTable();
             updateLocationSelectors();
             setupEventListeners();
             showNotification('Sistema iniciado correctamente');
@@ -655,6 +666,7 @@
 
             document.getElementById('searchInput').addEventListener('input', handleSearch);
             document.getElementById('itemsSearchInput').addEventListener('input', handleItemsSearch);
+            document.getElementById('catalogSearchInput').addEventListener('input', handleCatalogSearch);
             
             // Auto-save en cambios de configuración
             ['pasillosInput', 'estantesInput', 'casillasInput'].forEach(id => {
@@ -680,6 +692,8 @@
 
             if (view === 'items') {
                 updateItemsTable();
+            } else if (view === 'catalogo') {
+                updateCatalogTable();
             }
         }
 
@@ -726,7 +740,7 @@
                         const item = allItems.find(item => item.location === location);
                         if (item) {
                             casilla.classList.add('occupied');
-                            casilla.title = item.name;
+                            casilla.title = `${item.code} - ${item.description}`;
                         }
 
                         casillasGrid.appendChild(casilla);
@@ -1048,24 +1062,29 @@
             }
         }
 
+        // Gestión de items (modificada)
         async function addItem() {
-            const name = document.getElementById('itemName').value.trim();
+            const code = document.getElementById('itemCode').value.trim().toUpperCase();
             const description = document.getElementById('itemDescription').value.trim();
-            const tags = document.getElementById('itemTags').value.trim();
-            const category = document.getElementById('itemCategory').value;
-            const quantity = parseInt(document.getElementById('itemQuantity').value) || 1;
             
             const pasillo = document.getElementById('pasilloSelect').value;
             const estante = document.getElementById('estanteSelect').value;
             const casilla = document.getElementById('casillaSelect').value;
 
-            if (!name) {
-                alert('El nombre del item es requerido');
+            if (!code) {
+                alert('El código del item es requerido');
                 return;
             }
 
             if (!pasillo || !estante || !casilla) {
                 alert('Selecciona una ubicación completa (pasillo, estante y casilla)');
+                return;
+            }
+
+            // Verificar que existe en el catálogo
+            const catalogItem = allCatalog.find(item => item.code === code);
+            if (!catalogItem) {
+                alert('Este código no existe en el catálogo. Agrégalo primero al catálogo.');
                 return;
             }
 
@@ -1078,11 +1097,8 @@
             }
 
             const itemData = {
-                name: name,
-                description: description,
-                category: category,
-                quantity: quantity,
-                tags: tags,
+                code: code,
+                description: catalogItem.description,
                 location: location,
                 timestamp: new Date().toISOString()
             };
@@ -1092,24 +1108,22 @@
                 await loadItems();
                 generateWarehouse();
                 updateItemsTable();
+                updateCatalogTable(); // Actualizar para mostrar que está ubicado
                 updateLocationSelectors();
                 
                 // Limpiar formulario
-                document.getElementById('itemName').value = '';
+                document.getElementById('itemCode').value = '';
                 document.getElementById('itemDescription').value = '';
-                document.getElementById('itemTags').value = '';
-                document.getElementById('itemCategory').value = '';
-                document.getElementById('itemQuantity').value = 1;
                 document.getElementById('pasilloSelect').value = '';
                 document.getElementById('estanteSelect').value = '';
                 document.getElementById('casillaSelect').value = '';
                 document.getElementById('estanteSelect').disabled = true;
                 document.getElementById('casillaSelect').disabled = true;
                 
-                showNotification('Item agregado correctamente');
+                showNotification('Item ubicado correctamente');
             } catch (error) {
-                console.error('Error al agregar item:', error);
-                alert('Error al agregar el item');
+                console.error('Error al ubicar item:', error);
+                alert('Error al ubicar el item');
             }
         }
 
@@ -1152,7 +1166,7 @@
             }
         }
 
-        // Tabla de items
+        // Tabla de items (modificada)
         function updateItemsTable() {
             const tbody = document.getElementById('itemsTableBody');
             tbody.innerHTML = '';
@@ -1169,43 +1183,16 @@
                 const date = new Date(item.timestamp || Date.now());
                 const formattedDate = date.toLocaleDateString('es-ES');
                 
-                // Color de fondo para categorías
-                const categoryColors = {
-                    'electronica': '#e3f2fd',
-                    'herramientas': '#fff3e0',
-                    'oficina': '#f3e5f5',
-                    'limpieza': '#e8f5e8',
-                    'repuestos': '#fce4ec',
-                    'otros': '#f5f5f5'
-                };
-
-                const categoryColor = categoryColors[item.category] || '#ffffff';
-                
                 row.innerHTML = `
                     <td>
                         <input type="checkbox" name="itemSelect" value="${item.location}" 
                                ${isSelected ? 'checked' : ''} 
                                onchange="toggleItemSelection('${item.location}', this.checked)">
                     </td>
-                    <td><strong>${item.name}</strong></td>
+                    <td><strong style="font-family: monospace; background: #f8f9fa; padding: 0.2rem 0.4rem; border-radius: 4px;">${item.code}</strong></td>
                     <td>${item.description || ''}</td>
                     <td>
-                        <span style="background: ${categoryColor}; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">
-                            ${item.category ? item.category.charAt(0).toUpperCase() + item.category.slice(1) : 'Sin categoría'}
-                        </span>
-                    </td>
-                    <td>
-                        <span style="background: #e1f5fe; padding: 0.2rem 0.5rem; border-radius: 8px; font-weight: 500;">
-                            ${item.quantity || 1}
-                        </span>
-                    </td>
-                    <td>
-                        ${item.tags ? item.tags.split(',').map(tag => 
-                            `<span style="background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 6px; font-size: 0.7rem; margin-right: 0.2rem;">${tag.trim()}</span>`
-                        ).join('') : ''}
-                    </td>
-                    <td>
-                        <code style="background: #f8f9fa; padding: 0.2rem 0.4rem; border-radius: 4px;">${item.location}</code>
+                        <code style="background: #e9ecef; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.9rem;">${item.location}</code>
                     </td>
                     <td style="font-size: 0.8rem; color: #666;">${formattedDate}</td>
                     <td>
@@ -1262,9 +1249,8 @@
                 filteredItems = [...allItems];
             } else {
                 filteredItems = allItems.filter(item => 
-                    item.name.toLowerCase().includes(query) ||
+                    item.code.toLowerCase().includes(query) ||
                     (item.description && item.description.toLowerCase().includes(query)) ||
-                    (item.tags && item.tags.toLowerCase().includes(query)) ||
                     item.location.toLowerCase().includes(query)
                 );
             }
@@ -1281,9 +1267,8 @@
                     const location = casilla.dataset.location;
                     const item = allItems.find(i => i.location === location);
                     if (item && (
-                        item.name.toLowerCase().includes(query.toLowerCase()) ||
+                        item.code.toLowerCase().includes(query.toLowerCase()) ||
                         (item.description && item.description.toLowerCase().includes(query.toLowerCase())) ||
-                        (item.tags && item.tags.toLowerCase().includes(query.toLowerCase())) ||
                         location.toLowerCase().includes(query.toLowerCase())
                     )) {
                         casilla.style.background = '#fff3cd';
@@ -1570,9 +1555,21 @@
         window.toggleItemSelection = toggleItemSelection;
         window.bulkDelete = bulkDelete;
         window.bulkExport = bulkExport;
-        window.bulkCategoryUpdate = bulkCategoryUpdate;
         window.sortItems = sortItems;
         window.editItemInline = editItemInline;
+        window.autoFillDescription = autoFillDescription;
+        window.autoFillModalDescription = autoFillModalDescription;
+        
+        // Funciones del catálogo
+        window.addToCatalog = addToCatalog;
+        window.removeCatalogItem = removeCatalogItem;
+        window.quickLocateItem = quickLocateItem;
+        window.clearCatalog = clearCatalog;
+        window.exportCatalog = exportCatalog;
+        window.importCatalogCSV = importCatalogCSV;
+        window.sortCatalog = sortCatalog;
+        window.previousCatalogPage = previousCatalogPage;
+        window.nextCatalogPage = nextCatalogPage;
     </script>
 </body>
 </html>
