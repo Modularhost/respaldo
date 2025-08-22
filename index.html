@@ -869,3 +869,305 @@
                     item.name.toLowerCase().includes(query) ||
                     (item.description && item.description.toLowerCase().includes(query)) ||
                     (item.tags && item.tags.toLowerCase().includes(query)) ||
+                    item.location.toLowerCase().includes(query)
+                );
+            }
+            currentPage = 1;
+            updateItemsTable();
+            highlightSearchResults(query);
+        }
+
+        function highlightSearchResults(query) {
+            // Resaltar casillas en el mapa que coincidan con la búsqueda
+            document.querySelectorAll('.casilla').forEach(casilla => {
+                casilla.classList.remove('highlighted');
+                if (query) {
+                    const location = casilla.dataset.location;
+                    const item = allItems.find(i => i.location === location);
+                    if (item && (
+                        item.name.toLowerCase().includes(query.toLowerCase()) ||
+                        (item.description && item.description.toLowerCase().includes(query.toLowerCase())) ||
+                        (item.tags && item.tags.toLowerCase().includes(query.toLowerCase())) ||
+                        location.toLowerCase().includes(query.toLowerCase())
+                    )) {
+                        casilla.style.background = '#fff3cd';
+                        casilla.style.borderColor = '#ffc107';
+                    }
+                } else {
+                    casilla.style.background = '';
+                    casilla.style.borderColor = '';
+                }
+            });
+        }
+
+        // Paginación
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                updateItemsTable();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                updateItemsTable();
+            }
+        }
+
+        // Configuración del almacén
+        async function loadWarehouseConfig() {
+            try {
+                const configDoc = await getDoc(doc(db, 'config', 'warehouse'));
+                if (configDoc.exists()) {
+                    warehouseConfig = configDoc.data();
+                    document.getElementById('pasillosInput').value = warehouseConfig.pasillos;
+                    document.getElementById('estantesInput').value = warehouseConfig.estantes;
+                    document.getElementById('casillasInput').value = warehouseConfig.casillas;
+                }
+            } catch (error) {
+                console.error('Error al cargar configuración:', error);
+            }
+        }
+
+        async function saveWarehouseConfig() {
+            try {
+                await setDoc(doc(db, 'config', 'warehouse'), warehouseConfig);
+            } catch (error) {
+                console.error('Error al guardar configuración:', error);
+            }
+        }
+
+        async function applyChanges() {
+            const newConfig = {
+                pasillos: parseInt(document.getElementById('pasillosInput').value),
+                estantes: parseInt(document.getElementById('estantesInput').value),
+                casillas: parseInt(document.getElementById('casillasInput').value)
+            };
+
+            // Validar que los valores sean válidos
+            if (newConfig.pasillos < 1 || newConfig.pasillos > 10 ||
+                newConfig.estantes < 1 || newConfig.estantes > 8 ||
+                newConfig.casillas < 1 || newConfig.casillas > 10) {
+                alert('Los valores deben estar dentro de los rangos permitidos');
+                return;
+            }
+
+            warehouseConfig = newConfig;
+            
+            try {
+                await saveWarehouseConfig();
+                await loadItems();
+                generateWarehouse();
+                updateLocationSelect();
+                showNotification('Configuración aplicada correctamente');
+            } catch (error) {
+                console.error('Error al aplicar cambios:', error);
+                alert('Error al aplicar los cambios');
+            }
+        }
+
+        function revertChanges() {
+            document.getElementById('pasillosInput').value = warehouseConfig.pasillos;
+            document.getElementById('estantesInput').value = warehouseConfig.estantes;
+            document.getElementById('casillasInput').value = warehouseConfig.casillas;
+            showNotification('Cambios revertidos');
+        }
+
+        // Importar/Exportar datos
+        function exportData() {
+            const data = {
+                config: warehouseConfig,
+                items: allItems,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bodega_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('Datos exportados correctamente');
+        }
+
+        async function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    let data;
+                    
+                    if (file.name.endsWith('.json')) {
+                        data = JSON.parse(e.target.result);
+                        await importFromJSON(data);
+                    } else if (file.name.endsWith('.csv')) {
+                        await importFromCSV(e.target.result);
+                    }
+                    
+                    showNotification('Datos importados correctamente');
+                } catch (error) {
+                    console.error('Error al importar:', error);
+                    alert('Error al importar los datos. Verifica el formato del archivo.');
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+
+        async function importFromJSON(data) {
+            // Importar configuración si existe
+            if (data.config) {
+                warehouseConfig = data.config;
+                await saveWarehouseConfig();
+                document.getElementById('pasillosInput').value = warehouseConfig.pasillos;
+                document.getElementById('estantesInput').value = warehouseConfig.estantes;
+                document.getElementById('casillasInput').value = warehouseConfig.casillas;
+            }
+
+            // Importar items si existen
+            if (data.items && Array.isArray(data.items)) {
+                const importPromises = data.items.map(item => {
+                    return setDoc(doc(db, 'items', item.location), {
+                        name: item.name,
+                        description: item.description || '',
+                        tags: item.tags || '',
+                        location: item.location,
+                        timestamp: item.timestamp || new Date().toISOString()
+                    });
+                });
+                
+                await Promise.all(importPromises);
+            }
+
+            await loadItems();
+            generateWarehouse();
+            updateItemsTable();
+            updateLocationSelect();
+        }
+
+        async function importFromCSV(csvText) {
+            const lines = csvText.split('\n').filter(line => line.trim());
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            
+            // Verificar que tiene las columnas necesarias
+            const requiredColumns = ['nombre', 'ubicacion'];
+            const hasRequired = requiredColumns.every(col => headers.includes(col));
+            
+            if (!hasRequired) {
+                alert('El CSV debe contener al menos las columnas: Nombre, Ubicacion');
+                return;
+            }
+
+            const importPromises = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim().replace(/^"(.*)"$/, '$1'));
+                const item = {};
+                
+                headers.forEach((header, index) => {
+                    item[header] = values[index] || '';
+                });
+
+                if (item.nombre && item.ubicacion) {
+                    importPromises.push(
+                        setDoc(doc(db, 'items', item.ubicacion), {
+                            name: item.nombre,
+                            description: item.descripcion || '',
+                            tags: item.etiquetas || '',
+                            location: item.ubicacion,
+                            timestamp: new Date().toISOString()
+                        })
+                    );
+                }
+            }
+
+            await Promise.all(importPromises);
+            await loadItems();
+            generateWarehouse();
+            updateItemsTable();
+            updateLocationSelect();
+        }
+
+        // Notificaciones
+        function showNotification(message) {
+            // Remover notificación existente si existe
+            const existing = document.querySelector('.notification');
+            if (existing) {
+                existing.remove();
+            }
+
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            // Mostrar notificación
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+
+            // Ocultar después de 3 segundos
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Cerrar modal al hacer clic fuera
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('casillModal');
+            if (event.target === modal) {
+                closeCasillModal();
+            }
+        });
+
+        // Atajos de teclado
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeCasillModal();
+            }
+            
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                const searchInput = currentView === 'items' ? 
+                    document.getElementById('itemsSearchInput') : 
+                    document.getElementById('searchInput');
+                searchInput.focus();
+            }
+
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                exportData();
+            }
+        });
+
+        // Funciones globales para acceso desde HTML
+        window.addItem = addItem;
+        window.removeItem = removeItem;
+        window.clearAllItems = clearAllItems;
+        window.openCasillModal = openCasillModal;
+        window.closeCasillModal = closeCasillModal;
+        window.saveItemToModal = saveItemToModal;
+        window.removeItemFromModal = removeItemFromModal;
+        window.applyChanges = applyChanges;
+        window.revertChanges = revertChanges;
+        window.exportData = exportData;
+        window.importData = importData;
+        window.previousPage = previousPage;
+        window.nextPage = nextPage;
+    </script>
+</body>
+</html>
