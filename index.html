@@ -188,20 +188,16 @@
                 
                 <div class="config-section">
                     <div class="config-group">
-                        <label class="config-label">Pasillos</label>
-                        <input type="number" id="pasillosInput" class="config-input" value="4" min="1" max="10">
-                    </div>
-                    <div class="config-group">
-                        <label class="config-label">Estantes por pasillo</label>
-                        <input type="number" id="estantesInput" class="config-input" value="4" min="1" max="8">
-                    </div>
-                    <div class="config-group">
-                        <label class="config-label">Casillas por estante</label>
-                        <input type="number" id="casillasInput" class="config-input" value="6" min="1" max="10">
+                        <label class="config-label">Número de Pasillos</label>
+                        <input type="number" id="pasillosInput" class="config-input" value="4" min="1" max="10" onchange="updateAisleConfigs()">
                     </div>
                 </div>
 
-                <p style="color: #666; margin-bottom: 1.5rem;">Estantes se nombrarán: A, B, C, D</p>
+                <div id="aisleConfigs" class="aisle-configs">
+                    <!-- Configuraciones por pasillo se generan dinámicamente -->
+                </div>
+
+                <p style="color: #666; margin-bottom: 1.5rem;">Estantes se nombrarán: A, B, C, D, etc.</p>
 
                 <div style="display: flex; gap: 1rem;">
                     <button class="btn btn-primary" onclick="applyChanges()">Aplicar cambios</button>
