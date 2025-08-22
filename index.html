@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Bodega</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+        }
+
+        .header {
+            background: white;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #e1e8ed;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #8B4513, #D2B48C);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            color: #2c3e50;
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .search-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input {
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            width: 300px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            color: #666;
+            z-index: 1;
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .nav-btn.active {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .nav-btn:not(.active) {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #e1e8ed;
+        }
+
+        .nav-btn:hover {
+            opacity: 0.8;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            margin-bottom: 1.5rem;
+            color: #2c3e50;
+        }
+
+        .warehouse-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .pasillo {
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .pasillo-header {
+            background: #f8f9fa;
+            padding: 1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .estantes {
+            padding: 1rem;
+        }
+
+        .estante {
+            margin-bottom: 1rem;
+        }
+
+        .estante-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .casillas-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.25rem;
+        }
+
+        .casilla {
+            aspect-ratio: 1;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .casilla:hover {
+            border-color: #007bff;
+            background: #f0f8ff;
+        }
+
+        .casilla.occupied {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            color: #1976d2;
+            font-weight: 500;
+        }
+
+        .config-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .config-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .config-label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+
+        .config-input {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .items-table th,
+        .items-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .items-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .add-item-form {
+            display: grid;
+            grid-template-columns: 2fr 2fr 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+            margin-bottom: 2rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            border-radius: 6px;
+            z-index: 1001;
+            transform: translateX(100%);
+            transition: transform 0.3s;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .auto-save {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .nav-controls {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .search-input {
+                width: 100%;
+            }
+
+            .add-item-form {
+                grid-template-columns: 1fr;
+            }
+
+            .config-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">📦</div>
+            <h1>Mapa de Bodega</h1>
+        </div>
+        <div class="nav-controls">
+            <div class="search-container">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" placeholder="Buscar por nombre, etiqueta o ubicación..." id="searchInput">
+            </div>
+            <button class="nav-btn active" data-view="mapa">Mapa</button>
+            <button class="nav-btn" data-view="items">Items</button>
+            <button class="nav-btn" data-view="ajustes">Ajustes</button>
+            <button class="nav-btn" onclick="exportData()">Exportar</button>
+            <button class="nav-btn" onclick="document.getElementById('importFile').click()">Importar</button>
+            <input type="file" id="importFile" accept=".json,.csv" style="display: none;" onchange="importData(event)">
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Vista Mapa -->
+        <div id="mapa-view">
+            <div class="section">
+                <h2>Mapa visual</h2>
+                <div id="warehouseGrid" class="warehouse-grid">
+                    <!-- Pasillos se generan dinámicamente -->
+                </div>
+                <p style="color: #666; margin-top: 1rem;">Haz clic en una casilla para ver o agregar contenido.</p>
+            </div>
+            <p class="auto-save">Guardado automático en Firebase. Exporta un respaldo si es importante.</p>
+        </div>
+
+        <!-- Vista Items -->
+        <div id="items-view" class="hidden">
+            <div class="section">
+                <h2>Todos los items (<span id="itemsCount">0</span>)</h2>
+                
+                <div class="add-item-form">
+                    <input type="text" id="itemName" placeholder="Nombre del item" class="config-input">
+                    <input type="text" id="itemDescription" placeholder="Descripción" class="config-input">
+                    <input type="text" id="itemTags" placeholder="Etiquetas" class="config-input">
+                    <select id="itemLocation" class="config-input">
+                        <option value="">Seleccionar ubicación</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="addItem()">Agregar</button>
+                </div>
+
+                <div class="search-container" style="margin-bottom: 1rem;">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" placeholder="Buscar por nombre, etiqueta o ubicación..." id="itemsSearchInput">
+                </div>
+
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Etiquetas</th>
+                            <th>Ubicación</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsTableBody">
+                        <!-- Items se cargan dinámicamente -->
+                    </tbody>
+                </table>
+
+                <div class="pagination">
+                    <button class="btn btn-secondary" id="prevBtn" onclick="previousPage()">Anterior</button>
+                    <span>Página <span id="currentPage">1</span> de <span id="totalPages">1</span></span>
+                    <button class="btn btn-secondary" id="nextBtn" onclick="nextPage()">Siguiente</button>
+                </div>
+
+                <button class="btn btn-secondary" onclick="clearAllItems()" style="margin-top: 1rem;">Vaciar todo</button>
+            </div>
+        </div>
+
+        <!-- Vista Ajustes -->
+        <div id="ajustes-view" class="hidden">
+            <div class="section">
+                <h2>Ajustar estructura de la bodega</h2>
+                
+                <div class="config-section">
+                    <div class="config-group">
+                        <label class="config-label">Pasillos</label>
+                        <input type="number" id="pasillosInput" class="config-input" value="4" min="1" max="10">
+                    </div>
+                    <div class="config-group">
+                        <label class="config-label">Estantes por pasillo</label>
+                        <input type="number" id="estantesInput" class="config-input" value="4" min="1" max="8">
+                    </div>
+                    <div class="config-group">
+                        <label class="config-label">Casillas por estante</label>
+                        <input type="number" id="casillasInput" class="config-input" value="6" min="1" max="10">
+                    </div>
+                </div>
+
+                <p style="color: #666; margin-bottom: 1.5rem;">Estantes se nombrarán: A, B, C, D</p>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-primary" onclick="applyChanges()">Aplicar cambios</button>
+                    <button class="btn btn-secondary" onclick="revertChanges()">Revertir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para gestionar casillas -->
+    <div id="casillModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCasillModal()">&times;</span>
+            <h3 id="modalTitle">Gestionar Casilla</h3>
+            <div style="margin: 1rem 0;">
+                <label class="config-label">Nombre del item:</label>
+                <input type="text" id="modalItemName" class="config-input">
+            </div>
+            <div style="margin: 1rem 0;">
+                <label class="config-label">Descripción:</label>
+                <input type="text" id="modalItemDescription" class="config-input">
+            </div>
+            <div style="margin: 1rem 0;">
+                <label class="config-label">Etiquetas (separadas por coma):</label>
+                <input type="text" id="modalItemTags" class="config-input">
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button class="btn btn-primary" onclick="saveItemToModal()">Guardar</button>
+                <button class="btn btn-secondary" onclick="removeItemFromModal()">Quitar</button>
+                <button class="btn btn-secondary" onclick="closeCasillModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTW1DbRaD0AruIRQ_Tn-e-bB8paTV4NNs",
+            authDomain: "locateit-612c0.firebaseapp.com",
+            projectId: "locateit-612c0",
+            storageBucket: "locateit-612c0.firebasestorage.app",
+            messagingSenderId: "1054365620372",
+            appId: "1:1054365620372:web:401c55c834cbd9d4bdfc81",
+            measurementId: "G-2CXE0EZ940"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        window.db = db;
+        window.setDoc = setDoc;
+        window.getDoc = getDoc;
+        window.getDocs = getDocs;
+        window.deleteDoc = deleteDoc;
+        window.collection = collection;
+        window.doc = doc;
+        window.onSnapshot = onSnapshot;
+    </script>
+
+    <script>
+        // Variables globales
+        let currentView = 'mapa';
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let allItems = [];
+        let filteredItems = [];
+        let currentModal = null;
+        let warehouseConfig = {
+            pasillos: 4,
+            estantes: 4,
+            casillas: 6
+        };
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadWarehouseConfig();
+            await loadItems();
+            generateWarehouse();
+            updateItemsTable();
+            updateLocationSelect();
+            setupEventListeners();
+            showNotification('Sistema iniciado correctamente');
+        });
+
+        // Configuración de listeners
+        function setupEventListeners() {
+            document.querySelectorAll('[data-view]').forEach(btn => {
+                btn.addEventListener('click', switchView);
+            });
+
+            document.getElementById('searchInput').addEventListener('input', handleSearch);
+            document.getElementById('itemsSearchInput').addEventListener('input', handleItemsSearch);
+            
+            // Auto-save en cambios de configuración
+            ['pasillosInput', 'estantesInput', 'casillasInput'].forEach(id => {
+                document.getElementById(id).addEventListener('change', saveWarehouseConfig);
+            });
+        }
+
+        // Gestión de vistas
+        function switchView(e) {
+            const view = e.target.dataset.view;
+            currentView = view;
+
+            // Actualizar botones
+            document.querySelectorAll('[data-view]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === view);
+            });
+
+            // Mostrar vista correspondiente
+            document.querySelectorAll('[id$="-view"]').forEach(viewEl => {
+                viewEl.classList.add('hidden');
+            });
+            document.getElementById(view + '-view').classList.remove('hidden');
+
+            if (view === 'items') {
+                updateItemsTable();
+            }
+        }
+
+        // Generación del almacén
+        function generateWarehouse() {
+            const grid = document.getElementById('warehouseGrid');
+            grid.innerHTML = '';
+
+            for (let p = 1; p <= warehouseConfig.pasillos; p++) {
+                const pasilloDiv = document.createElement('div');
+                pasilloDiv.className = 'pasillo';
+                
+                const header = document.createElement('div');
+                header.className = 'pasillo-header';
+                header.textContent = `Pasillo ${p}`;
+                pasilloDiv.appendChild(header);
+
+                const estantesDiv = document.createElement('div');
+                estantesDiv.className = 'estantes';
+
+                const estanteLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+                
+                for (let e = 0; e < warehouseConfig.estantes; e++) {
+                    const estanteDiv = document.createElement('div');
+                    estanteDiv.className = 'estante';
+                    
+                    const label = document.createElement('div');
+                    label.className = 'estante-label';
+                    label.textContent = `Estante ${estanteLabels[e]}`;
+                    estanteDiv.appendChild(label);
+
+                    const casillasGrid = document.createElement('div');
+                    casillasGrid.className = 'casillas-grid';
+
+                    for (let c = 1; c <= warehouseConfig.casillas; c++) {
+                        const casilla = document.createElement('div');
+                        casilla.className = 'casilla';
+                        casilla.textContent = `C${c}`;
+                        const location = `${p}-${estanteLabels[e]}-C${c}`;
+                        casilla.dataset.location = location;
+                        casilla.addEventListener('click', () => openCasillModal(location));
+                        
+                        // Verificar si tiene contenido
+                        const item = allItems.find(item => item.location === location);
+                        if (item) {
+                            casilla.classList.add('occupied');
+                            casilla.title = item.name;
+                        }
+
+                        casillasGrid.appendChild(casilla);
+                    }
+
+                    estanteDiv.appendChild(casillasGrid);
+                    estantesDiv.appendChild(estanteDiv);
+                }
+
+                pasilloDiv.appendChild(estantesDiv);
+                grid.appendChild(pasilloDiv);
+            }
+        }
+
+        // Modal de casillas
+        function openCasillModal(location) {
+            currentModal = location;
+            const modal = document.getElementById('casillModal');
+            const title = document.getElementById('modalTitle');
+            title.textContent = `Gestionar Casilla ${location}`;
+
+            // Buscar item existente
+            const existingItem = allItems.find(item => item.location === location);
+            if (existingItem) {
+                document.getElementById('modalItemName').value = existingItem.name || '';
+                document.getElementById('modalItemDescription').value = existingItem.description || '';
+                document.getElementById('modalItemTags').value = existingItem.tags || '';
+            } else {
+                document.getElementById('modalItemName').value = '';
+                document.getElementById('modalItemDescription').value = '';
+                document.getElementById('modalItemTags').value = '';
+            }
+
+            modal.style.display = 'block';
+        }
+
+        function closeCasillModal() {
+            document.getElementById('casillModal').style.display = 'none';
+            currentModal = null;
+        }
+
+        async function saveItemToModal() {
+            if (!currentModal) return;
+
+            const name = document.getElementById('modalItemName').value.trim();
+            if (!name) {
+                alert('El nombre del item es requerido');
+                return;
+            }
+
+            const itemData = {
+                name: name,
+                description: document.getElementById('modalItemDescription').value.trim(),
+                tags: document.getElementById('modalItemTags').value.trim(),
+                location: currentModal,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                await setDoc(doc(db, 'items', currentModal), itemData);
+                await loadItems();
+                generateWarehouse();
+                updateItemsTable();
+                updateLocationSelect();
+                closeCasillModal();
+                showNotification('Item guardado correctamente');
+            } catch (error) {
+                console.error('Error al guardar:', error);
+                alert('Error al guardar el item');
+            }
+        }
+
+        async function removeItemFromModal() {
+            if (!currentModal) return;
+
+            try {
+                await deleteDoc(doc(db, 'items', currentModal));
+                await loadItems();
+                generateWarehouse();
+                updateItemsTable();
+                updateLocationSelect();
+                closeCasillModal();
+                showNotification('Item eliminado correctamente');
+            } catch (error) {
+                console.error('Error al eliminar:', error);
+                alert('Error al eliminar el item');
+            }
+        }
+
+        // Gestión de items
+        async function loadItems() {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'items'));
+                allItems = [];
+                querySnapshot.forEach((doc) => {
+                    allItems.push({ id: doc.id, ...doc.data() });
+                });
+                filteredItems = [...allItems];
+                document.getElementById('itemsCount').textContent = allItems.length;
+            } catch (error) {
+                console.error('Error al cargar items:', error);
+            }
+        }
+
+        async function addItem() {
+            const name = document.getElementById('itemName').value.trim();
+            const description = document.getElementById('itemDescription').value.trim();
+            const tags = document.getElementById('itemTags').value.trim();
+            const location = document.getElementById('itemLocation').value;
+
+            if (!name || !location) {
+                alert('Nombre y ubicación son requeridos');
+                return;
+            }
+
+            // Verificar si la ubicación ya está ocupada
+            if (allItems.find(item => item.location === location)) {
+                alert('Esta ubicación ya está ocupada');
+                return;
+            }
+
+            const itemData = {
+                name: name,
+                description: description,
+                tags: tags,
+                location: location,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                await setDoc(doc(db, 'items', location), itemData);
+                await loadItems();
+                generateWarehouse();
+                updateItemsTable();
+                updateLocationSelect();
+                
+                // Limpiar formulario
+                document.getElementById('itemName').value = '';
+                document.getElementById('itemDescription').value = '';
+                document.getElementById('itemTags').value = '';
+                document.getElementById('itemLocation').value = '';
+                
+                showNotification('Item agregado correctamente');
+            } catch (error) {
+                console.error('Error al agregar item:', error);
+                alert('Error al agregar el item');
+            }
+        }
+
+        async function removeItem(location) {
+            if (confirm('¿Estás seguro de que quieres eliminar este item?')) {
+                try {
+                    await deleteDoc(doc(db, 'items', location));
+                    await loadItems();
+                    generateWarehouse();
+                    updateItemsTable();
+                    updateLocationSelect();
+                    showNotification('Item eliminado correctamente');
+                } catch (error) {
+                    console.error('Error al eliminar item:', error);
+                    alert('Error al eliminar el item');
+                }
+            }
+        }
+
+        async function clearAllItems() {
+            if (confirm('¿Estás seguro de que quieres eliminar TODOS los items? Esta acción no se puede deshacer.')) {
+                try {
+                    const querySnapshot = await getDocs(collection(db, 'items'));
+                    const deletePromises = [];
+                    querySnapshot.forEach((docSnapshot) => {
+                        deletePromises.push(deleteDoc(doc(db, 'items', docSnapshot.id)));
+                    });
+                    await Promise.all(deletePromises);
+                    await loadItems();
+                    generateWarehouse();
+                    updateItemsTable();
+                    updateLocationSelect();
+                    showNotification('Todos los items eliminados');
+                } catch (error) {
+                    console.error('Error al eliminar todos los items:', error);
+                    alert('Error al eliminar los items');
+                }
+            }
+        }
+
+        // Tabla de items
+        function updateItemsTable() {
+            const tbody = document.getElementById('itemsTableBody');
+            tbody.innerHTML = '';
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageItems = filteredItems.slice(startIndex, endIndex);
+
+            pageItems.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.description || ''}</td>
+                    <td>${item.tags || ''}</td>
+                    <td>${item.location}</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="removeItem('${item.location}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Actualizar paginación
+            const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('totalPages').textContent = totalPages;
+            document.getElementById('prevBtn').disabled = currentPage <= 1;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+        }
+
+        function updateLocationSelect() {
+            const select = document.getElementById('itemLocation');
+            select.innerHTML = '<option value="">Seleccionar ubicación</option>';
+
+            const estanteLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+            
+            for (let p = 1; p <= warehouseConfig.pasillos; p++) {
+                for (let e = 0; e < warehouseConfig.estantes; e++) {
+                    for (let c = 1; c <= warehouseConfig.casillas; c++) {
+                        const location = `${p}-${estanteLabels[e]}-C${c}`;
+                        if (!allItems.find(item => item.location === location)) {
+                            const option = document.createElement('option');
+                            option.value = location;
+                            option.textContent = `Pasillo ${p}, Estante ${estanteLabels[e]}, Casilla ${c}`;
+                            select.appendChild(option);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Búsqueda
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            handleSearchLogic(query);
+        }
+
+        function handleItemsSearch() {
+            const query = document.getElementById('itemsSearchInput').value.toLowerCase();
+            handleSearchLogic(query);
+        }
+
+        function handleSearchLogic(query) {
+            if (!query) {
+                filteredItems = [...allItems];
+            } else {
+                filteredItems = allItems.filter(item => 
+                    item.name.toLowerCase().includes(query) ||
+                    (item.description && item.description.toLowerCase().includes(query)) ||
+                    (item.tags && item.tags.toLowerCase().includes(query)) ||
