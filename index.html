@@ -1,4 +1,25 @@
-<!DOCTYPE html>
+// Tabla de items
+        function updateItemsTable() {
+            const tbody = document.getElementById('itemsTableBody');
+            tbody.innerHTML = '';
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageItems = filteredItems.slice(startIndex, endIndex);
+
+            pageItems.forEach(item => {
+                const row = document.createElement('tr');
+                const isSelected = selectedItems.has(item.location);
+                
+                // Formatear fecha
+                const date = new Date(item.timestamp || Date.now());
+                const formattedDate = date.toLocaleDateString('es-ES');
+                
+                // Color de fondo para categorías
+                const categoryColors = {
+                    'electronica': '#e3f2fd',
+                    'herramientas': '#fff3e0',
+                    'oficina': '#f3e5f<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -254,10 +275,23 @@
 
         .add-item-form {
             display: grid;
-            grid-template-columns: 2fr 2fr 1fr 1fr auto;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .location-selector {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .location-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 1rem;
             align-items: end;
-            margin-bottom: 2rem;
         }
 
         .modal {
@@ -386,13 +420,56 @@
                 <h2>Todos los items (<span id="itemsCount">0</span>)</h2>
                 
                 <div class="add-item-form">
-                    <input type="text" id="itemName" placeholder="Nombre del item" class="config-input">
-                    <input type="text" id="itemDescription" placeholder="Descripción" class="config-input">
-                    <input type="text" id="itemTags" placeholder="Etiquetas" class="config-input">
-                    <select id="itemLocation" class="config-input">
-                        <option value="">Seleccionar ubicación</option>
-                    </select>
-                    <button class="btn btn-primary" onclick="addItem()">Agregar</button>
+                    <div class="config-group">
+                        <input type="text" id="itemName" placeholder="Nombre del item" class="config-input">
+                    </div>
+                    <div class="config-group">
+                        <input type="text" id="itemDescription" placeholder="Descripción" class="config-input">
+                    </div>
+                    <div class="config-group">
+                        <input type="text" id="itemTags" placeholder="Etiquetas (separadas por coma)" class="config-input">
+                    </div>
+                    <div class="config-group">
+                        <input type="number" id="itemQuantity" placeholder="Cantidad" class="config-input" min="1" value="1">
+                    </div>
+                    <div class="config-group">
+                        <select id="itemCategory" class="config-input">
+                            <option value="">Seleccionar categoría</option>
+                            <option value="electronica">Electrónica</option>
+                            <option value="herramientas">Herramientas</option>
+                            <option value="oficina">Oficina</option>
+                            <option value="limpieza">Limpieza</option>
+                            <option value="repuestos">Repuestos</option>
+                            <option value="otros">Otros</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="location-selector">
+                    <h4 style="margin-bottom: 1rem; color: #2c3e50;">Seleccionar Ubicación:</h4>
+                    <div class="location-controls">
+                        <div class="config-group">
+                            <label class="config-label">Pasillo</label>
+                            <select id="pasilloSelect" class="config-input" onchange="updateEstanteSelect()">
+                                <option value="">Seleccionar pasillo</option>
+                            </select>
+                        </div>
+                        <div class="config-group">
+                            <label class="config-label">Estante</label>
+                            <select id="estanteSelect" class="config-input" onchange="updateCasillaSelect()" disabled>
+                                <option value="">Seleccionar estante</option>
+                            </select>
+                        </div>
+                        <div class="config-group">
+                            <label class="config-label">Casilla</label>
+                            <select id="casillaSelect" class="config-input" disabled>
+                                <option value="">Seleccionar casilla</option>
+                            </select>
+                        </div>
+                        <div class="config-group" style="display: flex; align-items: end;">
+                            <button class="btn btn-primary" onclick="addItem()">Agregar Item</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="search-container" style="margin-bottom: 1rem;">
@@ -403,10 +480,22 @@
                 <table class="items-table">
                     <thead>
                         <tr>
-                            <th>Nombre</th>
+                            <th>
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
+                            <th style="cursor: pointer;" onclick="sortItems('name')">
+                                Nombre <span id="sort-name">↕️</span>
+                            </th>
                             <th>Descripción</th>
+                            <th>Categoría</th>
+                            <th>Cantidad</th>
                             <th>Etiquetas</th>
-                            <th>Ubicación</th>
+                            <th style="cursor: pointer;" onclick="sortItems('location')">
+                                Ubicación <span id="sort-location">↕️</span>
+                            </th>
+                            <th style="cursor: pointer;" onclick="sortItems('timestamp')">
+                                Fecha <span id="sort-timestamp">↕️</span>
+                            </th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -414,6 +503,21 @@
                         <!-- Items se cargan dinámicamente -->
                     </tbody>
                 </table>
+
+                <div class="bulk-actions" style="margin: 1rem 0; display: none;" id="bulkActions">
+                    <button class="btn btn-secondary" onclick="bulkDelete()">Eliminar Seleccionados</button>
+                    <button class="btn btn-secondary" onclick="bulkExport()">Exportar Seleccionados</button>
+                    <select id="bulkCategoryChange" class="config-input" style="width: auto; margin-left: 1rem;">
+                        <option value="">Cambiar categoría...</option>
+                        <option value="electronica">Electrónica</option>
+                        <option value="herramientas">Herramientas</option>
+                        <option value="oficina">Oficina</option>
+                        <option value="limpieza">Limpieza</option>
+                        <option value="repuestos">Repuestos</option>
+                        <option value="otros">Otros</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="bulkCategoryUpdate()">Aplicar</button>
+                </div>
 
                 <div class="pagination">
                     <button class="btn btn-secondary" id="prevBtn" onclick="previousPage()">Anterior</button>
@@ -467,6 +571,22 @@
             <div style="margin: 1rem 0;">
                 <label class="config-label">Descripción:</label>
                 <input type="text" id="modalItemDescription" class="config-input">
+            </div>
+            <div style="margin: 1rem 0;">
+                <label class="config-label">Categoría:</label>
+                <select id="modalItemCategory" class="config-input">
+                    <option value="">Seleccionar categoría</option>
+                    <option value="electronica">Electrónica</option>
+                    <option value="herramientas">Herramientas</option>
+                    <option value="oficina">Oficina</option>
+                    <option value="limpieza">Limpieza</option>
+                    <option value="repuestos">Repuestos</option>
+                    <option value="otros">Otros</option>
+                </select>
+            </div>
+            <div style="margin: 1rem 0;">
+                <label class="config-label">Cantidad:</label>
+                <input type="number" id="modalItemQuantity" class="config-input" min="1" value="1">
             </div>
             <div style="margin: 1rem 0;">
                 <label class="config-label">Etiquetas (separadas por coma):</label>
@@ -528,6 +648,9 @@
         let allItems = [];
         let filteredItems = [];
         let currentModal = null;
+        let selectedItems = new Set();
+        let sortField = 'name';
+        let sortDirection = 'asc';
         let warehouseConfig = {
             pasillos: 4,
             estantes: 4,
@@ -540,7 +663,7 @@
             await loadItems();
             generateWarehouse();
             updateItemsTable();
-            updateLocationSelect();
+            updateLocationSelectors();
             setupEventListeners();
             showNotification('Sistema iniciado correctamente');
         });
@@ -639,7 +762,224 @@
             }
         }
 
-        // Modal de casillas
+        // Nuevas funciones para selectores de ubicación
+        function updateLocationSelectors() {
+            const pasilloSelect = document.getElementById('pasilloSelect');
+            pasilloSelect.innerHTML = '<option value="">Seleccionar pasillo</option>';
+            
+            for (let p = 1; p <= warehouseConfig.pasillos; p++) {
+                const option = document.createElement('option');
+                option.value = p;
+                option.textContent = `Pasillo ${p}`;
+                pasilloSelect.appendChild(option);
+            }
+        }
+
+        function updateEstanteSelect() {
+            const pasilloSelect = document.getElementById('pasilloSelect');
+            const estanteSelect = document.getElementById('estanteSelect');
+            const casillaSelect = document.getElementById('casillaSelect');
+            
+            estanteSelect.innerHTML = '<option value="">Seleccionar estante</option>';
+            casillaSelect.innerHTML = '<option value="">Seleccionar casilla</option>';
+            casillaSelect.disabled = true;
+            
+            if (pasilloSelect.value) {
+                estanteSelect.disabled = false;
+                const estanteLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+                
+                for (let e = 0; e < warehouseConfig.estantes; e++) {
+                    const option = document.createElement('option');
+                    option.value = estanteLabels[e];
+                    option.textContent = `Estante ${estanteLabels[e]}`;
+                    estanteSelect.appendChild(option);
+                }
+            } else {
+                estanteSelect.disabled = true;
+            }
+        }
+
+        function updateCasillaSelect() {
+            const pasilloSelect = document.getElementById('pasilloSelect');
+            const estanteSelect = document.getElementById('estanteSelect');
+            const casillaSelect = document.getElementById('casillaSelect');
+            
+            casillaSelect.innerHTML = '<option value="">Seleccionar casilla</option>';
+            
+            if (pasilloSelect.value && estanteSelect.value) {
+                casillaSelect.disabled = false;
+                
+                for (let c = 1; c <= warehouseConfig.casillas; c++) {
+                    const location = `${pasilloSelect.value}-${estanteSelect.value}-C${c}`;
+                    if (!allItems.find(item => item.location === location)) {
+                        const option = document.createElement('option');
+                        option.value = `C${c}`;
+                        option.textContent = `Casilla ${c}`;
+                        casillaSelect.appendChild(option);
+                    }
+                }
+                
+                if (casillaSelect.children.length === 1) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'No hay casillas disponibles';
+                    option.disabled = true;
+                    casillaSelect.appendChild(option);
+                }
+            } else {
+                casillaSelect.disabled = true;
+            }
+        }
+
+        // Funciones de ordenamiento
+        function sortItems(field) {
+            if (sortField === field) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortField = field;
+                sortDirection = 'asc';
+            }
+
+            // Actualizar indicadores visuales
+            document.querySelectorAll('[id^="sort-"]').forEach(span => {
+                span.textContent = '↕️';
+            });
+            
+            const indicator = document.getElementById(`sort-${field}`);
+            if (indicator) {
+                indicator.textContent = sortDirection === 'asc' ? '↑' : '↓';
+            }
+
+            filteredItems.sort((a, b) => {
+                let aVal = a[field] || '';
+                let bVal = b[field] || '';
+                
+                if (field === 'timestamp') {
+                    aVal = new Date(aVal);
+                    bVal = new Date(bVal);
+                }
+                
+                if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            updateItemsTable();
+        }
+
+        // Funciones de selección múltiple
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const itemCheckboxes = document.querySelectorAll('input[name="itemSelect"]');
+            
+            itemCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+                if (selectAllCheckbox.checked) {
+                    selectedItems.add(checkbox.value);
+                } else {
+                    selectedItems.delete(checkbox.value);
+                }
+            });
+            
+            toggleBulkActions();
+        }
+
+        function toggleItemSelection(location, checked) {
+            if (checked) {
+                selectedItems.add(location);
+            } else {
+                selectedItems.delete(location);
+            }
+            
+            // Actualizar checkbox "Seleccionar todo"
+            const totalItems = document.querySelectorAll('input[name="itemSelect"]').length;
+            const selectedCount = selectedItems.size;
+            const selectAllCheckbox = document.getElementById('selectAll');
+            
+            selectAllCheckbox.checked = selectedCount === totalItems && totalItems > 0;
+            selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < totalItems;
+            
+            toggleBulkActions();
+        }
+
+        function toggleBulkActions() {
+            const bulkActions = document.getElementById('bulkActions');
+            bulkActions.style.display = selectedItems.size > 0 ? 'block' : 'none';
+        }
+
+        // Acciones masivas
+        async function bulkDelete() {
+            if (selectedItems.size === 0) return;
+            
+            if (confirm(`¿Estás seguro de eliminar ${selectedItems.size} items?`)) {
+                const deletePromises = Array.from(selectedItems).map(location => 
+                    deleteDoc(doc(db, 'items', location))
+                );
+                
+                try {
+                    await Promise.all(deletePromises);
+                    selectedItems.clear();
+                    await loadItems();
+                    generateWarehouse();
+                    updateItemsTable();
+                    updateLocationSelectors();
+                    showNotification(`${deletePromises.length} items eliminados`);
+                } catch (error) {
+                    console.error('Error en eliminación masiva:', error);
+                    alert('Error al eliminar algunos items');
+                }
+            }
+        }
+
+        function bulkExport() {
+            if (selectedItems.size === 0) return;
+            
+            const selectedItemsData = allItems.filter(item => selectedItems.has(item.location));
+            const data = {
+                items: selectedItemsData,
+                exportDate: new Date().toISOString(),
+                count: selectedItemsData.length
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `items_seleccionados_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification(`${selectedItemsData.length} items exportados`);
+        }
+
+        async function bulkCategoryUpdate() {
+            const newCategory = document.getElementById('bulkCategoryChange').value;
+            if (!newCategory || selectedItems.size === 0) return;
+
+            const updatePromises = Array.from(selectedItems).map(async location => {
+                const item = allItems.find(i => i.location === location);
+                if (item) {
+                    return setDoc(doc(db, 'items', location), {
+                        ...item,
+                        category: newCategory,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            });
+
+            try {
+                await Promise.all(updatePromises);
+                await loadItems();
+                updateItemsTable();
+                document.getElementById('bulkCategoryChange').value = '';
+                showNotification(`Categoría actualizada para ${selectedItems.size} items`);
+            } catch (error) {
+                console.error('Error en actualización masiva:', error);
+                alert('Error al actualizar categorías');
+            }
+        }
         function openCasillModal(location) {
             currentModal = location;
             const modal = document.getElementById('casillModal');
@@ -733,12 +1073,24 @@
             const name = document.getElementById('itemName').value.trim();
             const description = document.getElementById('itemDescription').value.trim();
             const tags = document.getElementById('itemTags').value.trim();
-            const location = document.getElementById('itemLocation').value;
+            const category = document.getElementById('itemCategory').value;
+            const quantity = parseInt(document.getElementById('itemQuantity').value) || 1;
+            
+            const pasillo = document.getElementById('pasilloSelect').value;
+            const estante = document.getElementById('estanteSelect').value;
+            const casilla = document.getElementById('casillaSelect').value;
 
-            if (!name || !location) {
-                alert('Nombre y ubicación son requeridos');
+            if (!name) {
+                alert('El nombre del item es requerido');
                 return;
             }
+
+            if (!pasillo || !estante || !casilla) {
+                alert('Selecciona una ubicación completa (pasillo, estante y casilla)');
+                return;
+            }
+
+            const location = `${pasillo}-${estante}-${casilla}`;
 
             // Verificar si la ubicación ya está ocupada
             if (allItems.find(item => item.location === location)) {
@@ -749,6 +1101,8 @@
             const itemData = {
                 name: name,
                 description: description,
+                category: category,
+                quantity: quantity,
                 tags: tags,
                 location: location,
                 timestamp: new Date().toISOString()
@@ -759,13 +1113,19 @@
                 await loadItems();
                 generateWarehouse();
                 updateItemsTable();
-                updateLocationSelect();
+                updateLocationSelectors();
                 
                 // Limpiar formulario
                 document.getElementById('itemName').value = '';
                 document.getElementById('itemDescription').value = '';
                 document.getElementById('itemTags').value = '';
-                document.getElementById('itemLocation').value = '';
+                document.getElementById('itemCategory').value = '';
+                document.getElementById('itemQuantity').value = 1;
+                document.getElementById('pasilloSelect').value = '';
+                document.getElementById('estanteSelect').value = '';
+                document.getElementById('casillaSelect').value = '';
+                document.getElementById('estanteSelect').disabled = true;
+                document.getElementById('casillaSelect').disabled = true;
                 
                 showNotification('Item agregado correctamente');
             } catch (error) {
@@ -778,10 +1138,11 @@
             if (confirm('¿Estás seguro de que quieres eliminar este item?')) {
                 try {
                     await deleteDoc(doc(db, 'items', location));
+                    selectedItems.delete(location); // Remover de selección si estaba seleccionado
                     await loadItems();
                     generateWarehouse();
                     updateItemsTable();
-                    updateLocationSelect();
+                    updateLocationSelectors();
                     showNotification('Item eliminado correctamente');
                 } catch (error) {
                     console.error('Error al eliminar item:', error);
@@ -799,10 +1160,11 @@
                         deletePromises.push(deleteDoc(doc(db, 'items', docSnapshot.id)));
                     });
                     await Promise.all(deletePromises);
+                    selectedItems.clear(); // Limpiar selección
                     await loadItems();
                     generateWarehouse();
                     updateItemsTable();
-                    updateLocationSelect();
+                    updateLocationSelectors();
                     showNotification('Todos los items eliminados');
                 } catch (error) {
                     console.error('Error al eliminar todos los items:', error);
@@ -822,13 +1184,56 @@
 
             pageItems.forEach(item => {
                 const row = document.createElement('tr');
+                const isSelected = selectedItems.has(item.location);
+                
+                // Formatear fecha
+                const date = new Date(item.timestamp || Date.now());
+                const formattedDate = date.toLocaleDateString('es-ES');
+                
+                // Color de fondo para categorías
+                const categoryColors = {
+                    'electronica': '#e3f2fd',
+                    'herramientas': '#fff3e0',
+                    'oficina': '#f3e5f5',
+                    'limpieza': '#e8f5e8',
+                    'repuestos': '#fce4ec',
+                    'otros': '#f5f5f5'
+                };
+
+                const categoryColor = categoryColors[item.category] || '#ffffff';
+                
                 row.innerHTML = `
-                    <td>${item.name}</td>
-                    <td>${item.description || ''}</td>
-                    <td>${item.tags || ''}</td>
-                    <td>${item.location}</td>
                     <td>
-                        <button class="btn btn-secondary" onclick="removeItem('${item.location}')" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Eliminar</button>
+                        <input type="checkbox" name="itemSelect" value="${item.location}" 
+                               ${isSelected ? 'checked' : ''} 
+                               onchange="toggleItemSelection('${item.location}', this.checked)">
+                    </td>
+                    <td><strong>${item.name}</strong></td>
+                    <td>${item.description || ''}</td>
+                    <td>
+                        <span style="background: ${categoryColor}; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">
+                            ${item.category ? item.category.charAt(0).toUpperCase() + item.category.slice(1) : 'Sin categoría'}
+                        </span>
+                    </td>
+                    <td>
+                        <span style="background: #e1f5fe; padding: 0.2rem 0.5rem; border-radius: 8px; font-weight: 500;">
+                            ${item.quantity || 1}
+                        </span>
+                    </td>
+                    <td>
+                        ${item.tags ? item.tags.split(',').map(tag => 
+                            `<span style="background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 6px; font-size: 0.7rem; margin-right: 0.2rem;">${tag.trim()}</span>`
+                        ).join('') : ''}
+                    </td>
+                    <td>
+                        <code style="background: #f8f9fa; padding: 0.2rem 0.4rem; border-radius: 4px;">${item.location}</code>
+                    </td>
+                    <td style="font-size: 0.8rem; color: #666;">${formattedDate}</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="editItemInline('${item.location}')" 
+                                style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 0.25rem;">✏️</button>
+                        <button class="btn btn-secondary" onclick="removeItem('${item.location}')" 
+                                style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: #dc3545; color: white;">🗑️</button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -840,26 +1245,25 @@
             document.getElementById('totalPages').textContent = totalPages;
             document.getElementById('prevBtn').disabled = currentPage <= 1;
             document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+            
+            // Actualizar estado del checkbox "Seleccionar todo"
+            const totalItems = pageItems.length;
+            const selectedCount = pageItems.filter(item => selectedItems.has(item.location)).length;
+            const selectAllCheckbox = document.getElementById('selectAll');
+            
+            if (totalItems === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = selectedCount === totalItems;
+                selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < totalItems;
+            }
         }
 
-        function updateLocationSelect() {
-            const select = document.getElementById('itemLocation');
-            select.innerHTML = '<option value="">Seleccionar ubicación</option>';
-
-            const estanteLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-            
-            for (let p = 1; p <= warehouseConfig.pasillos; p++) {
-                for (let e = 0; e < warehouseConfig.estantes; e++) {
-                    for (let c = 1; c <= warehouseConfig.casillas; c++) {
-                        const location = `${p}-${estanteLabels[e]}-C${c}`;
-                        if (!allItems.find(item => item.location === location)) {
-                            const option = document.createElement('option');
-                            option.value = location;
-                            option.textContent = `Pasillo ${p}, Estante ${estanteLabels[e]}, Casilla ${c}`;
-                            select.appendChild(option);
-                        }
-                    }
-                }
+        function editItemInline(location) {
+            const item = allItems.find(i => i.location === location);
+            if (item) {
+                openCasillModal(location);
             }
         }
 
@@ -1181,6 +1585,15 @@
         window.importData = importData;
         window.previousPage = previousPage;
         window.nextPage = nextPage;
+        window.updateEstanteSelect = updateEstanteSelect;
+        window.updateCasillaSelect = updateCasillaSelect;
+        window.toggleSelectAll = toggleSelectAll;
+        window.toggleItemSelection = toggleItemSelection;
+        window.bulkDelete = bulkDelete;
+        window.bulkExport = bulkExport;
+        window.bulkCategoryUpdate = bulkCategoryUpdate;
+        window.sortItems = sortItems;
+        window.editItemInline = editItemInline;
     </script>
 </body>
 </html>
