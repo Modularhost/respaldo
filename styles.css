@@ -8,10 +8,6 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: #f5f7fa;
     color: #2c3e50;
-    /* Asegurar que el body ocupe toda la altura de la ventana */
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
 }
 
 .header {
@@ -21,7 +17,6 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-shrink: 0; /* Evitar que el header se encoja */
 }
 
 .logo {
@@ -101,9 +96,6 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 2rem;
-    flex-grow: 1; /* Ocupa todo el espacio restante */
-    display: flex;
-    flex-direction: column;
 }
 
 .section {
@@ -112,32 +104,24 @@ body {
     padding: 2rem;
     margin-bottom: 2rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    flex-grow: 1; /* La sección crece para llenar el espacio */
-    display: flex;
-    flex-direction: column;
 }
 
 .section h2 {
     margin-bottom: 1.5rem;
     color: #2c3e50;
-    flex-shrink: 0; /* Evitar que el título se encoja */
 }
 
 .warehouse-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
-    flex-grow: 1; /* Ocupa el espacio restante en la sección */
-    overflow: auto; /* Permitir scroll si el contenido es demasiado grande */
+    margin-bottom: 2rem;
 }
 
 .pasillo {
     border: 1px solid #e1e8ed;
     border-radius: 8px;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    height: 100%; /* Asegurar que el pasillo use toda la altura disponible */
 }
 
 .pasillo-header {
@@ -146,35 +130,26 @@ body {
     font-weight: 600;
     color: #2c3e50;
     border-bottom: 1px solid #e1e8ed;
-    flex-shrink: 0; /* Evitar que el header del pasillo se encoja */
 }
 
 .estantes {
     padding: 1rem;
-    flex-grow: 1; /* Los estantes ocupan el espacio restante */
-    display: flex;
-    flex-direction: column;
 }
 
 .estante {
     margin-bottom: 1rem;
-    flex-grow: 1; /* Cada estante crece proporcionalmente */
-    display: flex;
-    flex-direction: column;
 }
 
 .estante-label {
     font-size: 0.9rem;
     color: #666;
     margin-bottom: 0.5rem;
-    flex-shrink: 0;
 }
 
 .casillas-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(30px, 1fr)); /* Ajuste dinámico de columnas según casillas */
+    grid-template-columns: repeat(6, 1fr);
     gap: 0.25rem;
-    flex-grow: 1; /* Las casillas ocupan el espacio restante */
 }
 
 .casilla {
@@ -207,26 +182,6 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 2rem;
     margin-bottom: 2rem;
-}
-
-.aisle-configs {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.aisle-config {
-    background: #f8f9fa;
-    padding: 1rem;
-    border-radius: 8px;
-    border: 1px solid #e1e8ed;
-}
-
-.aisle-config h3 {
-    margin-bottom: 1rem;
-    font-size: 1rem;
-    color: #2c3e50;
 }
 
 .config-group {
@@ -440,14 +395,6 @@ body {
     }
 
     .config-section {
-        grid-template-columns: 1fr;
-    }
-
-    .aisle-configs {
-        grid-template-columns: 1fr;
-    }
-
-    .warehouse-grid {
         grid-template-columns: 1fr;
     }
 }
